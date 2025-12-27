@@ -1,8 +1,8 @@
 
-# ------------------------------------------------------------
-# Aplicación web (Streamlit) para detectar correos
-# phishing usando TF-IDF + Regresión Logística (con scikit-learn).
-# ------------------------------------------------------------
+
+# Aplicación web (Streamlit) para detectar correos phishing
+# usando TF-IDF + Regresión Logística (con scikit-learn).
+
 
 import streamlit as st
 import pandas as pd
@@ -12,9 +12,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# -----------------------------
-# Configuración de la página y cabecera
-# -----------------------------
+
 # Establece el título de la pestaña y el layout de la aplicación.
 st.set_page_config(page_title="Detector de Phishing", layout="centered")
 
@@ -22,10 +20,10 @@ st.set_page_config(page_title="Detector de Phishing", layout="centered")
 st.title("Detector de Correos Phishing con IA")
 st.write("Carga un dataset de correos electrónicos y analiza si un nuevo correo es phishing o legítimo.")
 
-# -----------------------------
-# Entrada de datos: subir CSV
-# -----------------------------
-# El uploader exige un CSV con columnas 'email' (texto) y 'label' (0/1).
+
+# Paso 1: ENTRADA DE DATOS: SUBIR CSV
+
+# El uploader pide un CSV con columnas 'email' (texto) y 'label' (0/1).
 uploaded_file = st.file_uploader(
     "Cargar archivo CSV con columnas 'email' y 'label'", type=["csv"]
 )
@@ -34,43 +32,47 @@ uploaded_file = st.file_uploader(
 model = None
 vectorizer = None
 
-# Si el usuario ha subido un archivo...
+# Si el usuario sube un archivo
 if uploaded_file:
     # Carga del CSV en un DataFrame de pandas.
     df = pd.read_csv(uploaded_file)
 
-    # Validación mínima: el fichero debe contener las columnas esperadas.
+    # Validación de los datos del csv: el fichero debe contener las columnas esperadas.
     if "email" in df.columns and "label" in df.columns:
         st.success("Dataset cargado correctamente.")
         st.write("Muestra del dataset:")
         # Visualización de las primeras filas para ver que se ha leído bien.
         st.dataframe(df.head())
 
-        # -----------------------------
-        # Vectorización de texto (TF-IDF)
-        # -----------------------------
+       
+        # Paso 2: VECTORIZACIÓN DEL TEXTO (TF-IDF)
+       
         # TfidfVectorizer convertirá textos en vectores numéricos ponderados.
-        # 'stop_words' está en inglés; 
-        # se podría cambiar a 'spanish' o proporcionar tu propia lista de stopwords.
+        # 'stop_words' en inglés, eliminará las palabras vacías (stop words) en este caso en inglés 
+        # durante el preprocesamiento del texto, se podría cambiar a 'spanish' 
+        # o proporcionar una lista de stopwords.
         vectorizer = TfidfVectorizer(stop_words="english")
 
-        # Ajustamos el vocabulario y transformamos todo el conjunto (fit_transform).
+        # Se ajusta el vocabulario y se transforma todo el conjunto (fit_transform).
+        # aprende el vocabulario e IDF a partir de todos los textos de email
         X = vectorizer.fit_transform(df["email"])
 
-        # Etiquetas (0 = legítimo, 1 = phishing)
+        #Extrae el vector de etiquetas de cada correo: 0 si es legítimo y 1 si es phishing.
         y = df["label"]
 
-        # -----------------------------
-        # Entrenamiento del clasificador (Regresión Logística)
-        # -----------------------------
-        # Se usa LogisticRegression con parámetros por defecto. 
+    
+        # Paso 3: ENTRENAMIENTO DE CLASIFICACIÓN DE CORREOS (REGRESIÓN LOGÍSTICA)
+       
+        # Se usa LogisticRegression con los parámetros por defecto. 
         model = LogisticRegression()
         model.fit(X, y)
 
-        # -----------------------------
-        # Evaluación 
-        # -----------------------------
-        # Aquí se predice sobre X usado para entrenar. 
+
+        # Paso 4: EVALUACIÓN  DE LOS RESULTADOS
+     
+        # Toma la matriz de características X (la representación TF‑IDF de los correos) 
+        # y aplica el modelo entrenado (Regresión Logística) para generar las predicciones 
+        # y se guardan en un array.
         y_pred = model.predict(X)
 
         # Reporte de métricas: precision, recall, F1 por clase, macro/weighted, etc.
@@ -87,9 +89,8 @@ if uploaded_file:
         ax.set_title("Matriz de Confusión")
         st.pyplot(fig)
 
-        # -----------------------------
-        # Analizar un correo nuevo
-        # -----------------------------
+        # Paso 5: ANALIZAR UN CORREO DE FORMA MANUAL
+      
         st.write("---")
         st.subheader("Analizar nuevo correo")
 
@@ -100,7 +101,7 @@ if uploaded_file:
         if st.button("Analizar"):
             # Validamos que haya contenido.
             if new_email.strip() != "":
-                # Transforma SOLO con el vectorizador ya ajustado (sin re-aprender vocabulario).
+                # Transforma con el vectorizador ya ajustado (sin reaprender vocabulario).
                 new_vector = vectorizer.transform([new_email])
 
                 # Predicción binaria (0/1) con el modelo entrenado.
